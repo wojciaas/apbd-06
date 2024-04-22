@@ -4,7 +4,7 @@ namespace sql_rest_api.Animal;
 
 public class Animal
 {
-    public readonly int ID;
+    public int ID { get; }
     [Required]
     [MaxLength(200)]
     public string Name { get; set; }

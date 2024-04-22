@@ -21,16 +21,16 @@ public class AnimalRepository : IAnimalRepository
         switch (orderBy)
         {
             case "name":                 
-                cmd.CommandText = "SELECT IdAnimal, Name, Description, Category, Area FROM Animal ORDER BY Name ASC";                 
+                cmd.CommandText = "SELECT IdAnimal, Name, Description, Category, Area FROM cw6.Animal ORDER BY Name ASC";                 
                 break;             
             case "description":                 
-                cmd.CommandText = "SELECT IdAnimal, Name, Description, Category, Area FROM Animal ORDER BY Description ASC";                 
+                cmd.CommandText = "SELECT IdAnimal, Name, Description, Category, Area FROM cw6.Animal ORDER BY Description ASC";                 
                 break;             
             case "category":                 
-                cmd.CommandText = "SELECT IdAnimal, Name, Description, Category, Area FROM Animal ORDER BY Category ASC";                 
+                cmd.CommandText = "SELECT IdAnimal, Name, Description, Category, Area FROM cw6.Animal ORDER BY Category ASC";                 
                 break;             
             case "area":                 
-                cmd.CommandText = "SELECT IdAnimal, Name, Description, Category, Area FROM Animal ORDER BY Area ASC";                 
+                cmd.CommandText = "SELECT IdAnimal, Name, Description, Category, Area FROM cw6.Animal ORDER BY Area ASC";                 
                 break;             
             default:                 
                 throw new ArgumentException("Invalid orderBy parameter");
@@ -43,8 +43,8 @@ public class AnimalRepository : IAnimalRepository
             animals.Add(new Animal((int)dr["IdAnimal"],
                 dr["Name"].ToString(),
                 dr["Description"].ToString(),
-                (AnimalCategory)dr["Category"],
-                (AnimalArea)dr["Area"]));
+                (AnimalCategory)Enum.Parse(typeof(AnimalCategory), dr["Category"].ToString()), 
+                (AnimalArea)Enum.Parse(typeof(AnimalArea), dr["Area"].ToString())));
         }
         
         return animals;
@@ -59,17 +59,19 @@ public class AnimalRepository : IAnimalRepository
         
         using SqlCommand cmd = new SqlCommand();
         cmd.Connection = con;
-        cmd.CommandText = "INSERT INTO Animal (Name, Description, Category, Area) VALUES (@Name, @Description, @Category, @Area)";
+        cmd.CommandText = "INSERT INTO cw6.Animal (Name, Description, Category, Area) VALUES (@Name, @Description, @Category, @Area);SELECT @@IDENTITY";
         cmd.Parameters.AddWithValue("@Name", name);
         cmd.Parameters.AddWithValue("@Description", description);
         cmd.Parameters.AddWithValue("@Category", category);
         cmd.Parameters.AddWithValue("@Area", area);
-        cmd.ExecuteNonQuery();
         
-        cmd.CommandText = "SELECT @@IDENTITY";
-        int id = cmd.ExecuteNonQuery();
+        SqlDataReader dr = cmd.ExecuteReader();
+        while (dr.Read())
+        {
+            return new Animal((int)(decimal)dr[0], name, description, category, area);
+        }
         
-        return new Animal(id, name, description, category, area);
+        throw new Exception("Could not create animal");
     }
 
     public int UpdateAnimal(AnimalDTO animalDTO, int id)
@@ -81,15 +83,12 @@ public class AnimalRepository : IAnimalRepository
         
         using SqlCommand cmd = new SqlCommand();
         cmd.Connection = con;
-        cmd.CommandText = "UPDATE Animal SET Name = @Name, Description = @Description, Category = @Category, Area = @Area WHERE IdAnimal = @IdAnimal";
+        cmd.CommandText = "UPDATE cw6.Animal SET Name = @Name, Description = @Description, Category = @Category, Area = @Area WHERE IdAnimal = @IdAnimal;SELECT @@ROWCOUNT";
         cmd.Parameters.AddWithValue("@Name", name);
         cmd.Parameters.AddWithValue("@Description", description);
         cmd.Parameters.AddWithValue("@Category", category);
         cmd.Parameters.AddWithValue("@Area", area);
         cmd.Parameters.AddWithValue("@IdAnimal", id);
-        cmd.ExecuteNonQuery();
-        
-        cmd.CommandText = "SELECT @@ROWCOUNT";
         return cmd.ExecuteNonQuery();
     }
 
@@ -100,10 +99,9 @@ public class AnimalRepository : IAnimalRepository
         
         using SqlCommand cmd = new SqlCommand();
         cmd.Connection = con;
-        cmd.CommandText = "DELETE FROM Animal WHERE IdAnimal = @IdAnimal";
+        cmd.CommandText = "DELETE FROM cw6.Animal WHERE IdAnimal = @IdAnimal;SELECT @@ROWCOUNT";
         cmd.Parameters.AddWithValue("@IdAnimal", id);
         
-        cmd.CommandText = "SELECT @@ROWCOUNT";
         return cmd.ExecuteNonQuery();
     }
 }
