@@ -1,6 +1,5 @@
 using System.Data.Common;
 using System.Data.SqlClient;
-using rest_api_warehouse.DTOs;
 using rest_api_warehouse.Interfaces;
 
 namespace rest_api_warehouse.Services;
@@ -25,7 +24,7 @@ public class WarehouseRepository : IWarehouseRepository
 
         await conn.OpenAsync();
         
-        return await com.ExecuteScalarAsync() != null;
+        return await com.ExecuteScalarAsync() is not null;
     }
 
     public async Task<bool> DoesWarehouseExist(int id)
@@ -34,12 +33,12 @@ public class WarehouseRepository : IWarehouseRepository
         await using SqlCommand com = new SqlCommand();
 
         com.Connection = conn;
-        com.CommandText = "SELECT 1 FROM cw7.Warehouse WHERE IdProduct = @Id";
+        com.CommandText = "SELECT 1 FROM cw7.Warehouse WHERE IdWarehouse = @Id";
         com.Parameters.AddWithValue("@Id", id);
 
         await conn.OpenAsync();
         
-        return await com.ExecuteScalarAsync() != null;
+        return await com.ExecuteScalarAsync() is not null;
     }
 
     public async Task<bool> DoesOrderExist(int id, int amount, DateTime createdAt)
@@ -48,15 +47,15 @@ public class WarehouseRepository : IWarehouseRepository
         await using SqlCommand com = new SqlCommand();
 
         com.Connection = conn;
-        com.CommandText = "SELECT 1 FROM cw7.Order WHERE IdOrder = @Id AND Amount = @Amount " +
-                          "AND CreatedAt < @CreatedAt AND FulfilledAt = NULL";
+        com.CommandText = "SELECT 1 FROM cw7.[Order] WHERE IdProduct = @Id AND Amount = @Amount " +
+                          "AND CreatedAt < @CreatedAt AND FulfilledAt IS NULL";
         com.Parameters.AddWithValue("@Id", id);
         com.Parameters.AddWithValue("@Amount", amount);
         com.Parameters.AddWithValue("@CreatedAt", createdAt);
 
         await conn.OpenAsync();
-
-        return await com.ExecuteScalarAsync() != null;
+        
+        return await com.ExecuteScalarAsync() is not null;
     }
 
     public async Task<int> GetOrderId(int id, int amount, DateTime createdAt)
@@ -65,15 +64,17 @@ public class WarehouseRepository : IWarehouseRepository
         await using SqlCommand com = new SqlCommand();
 
         com.Connection = conn;
-        com.CommandText = "SELECT IdOrder FROM cw7.Order WHERE IdProduct = @Id AND Amount = @Amount " +
-                          "AND CreatedAt < @CreatedAt AND FulfilledAt = NULL";
+        com.CommandText = "SELECT IdOrder FROM cw7.[Order] WHERE IdProduct = @Id AND Amount = @Amount " +
+                          "AND CreatedAt < @CreatedAt AND FulfilledAt IS NULL";
         com.Parameters.AddWithValue("@Id", id);
         com.Parameters.AddWithValue("@Amount", amount);
         com.Parameters.AddWithValue("@CreatedAt", createdAt);
 
         await conn.OpenAsync();
         
-        return (int)await com.ExecuteScalarAsync();
+        int result = Convert.ToInt32(await com.ExecuteScalarAsync());
+
+        return result;
     }
 
     public async Task<decimal> GetProductPrice(int id)
@@ -85,7 +86,11 @@ public class WarehouseRepository : IWarehouseRepository
         com.CommandText = "SELECT Price FROM cw7.Product WHERE IdProduct = @Id";
         com.Parameters.AddWithValue("@Id", id);
 
-        return (decimal)await com.ExecuteScalarAsync();
+        await conn.OpenAsync();
+
+        decimal result = Convert.ToDecimal(await com.ExecuteScalarAsync());
+
+        return result;
     }
 
     public async Task<int> AddGoods(int idWarehouse, int idProduct, int idOrder, int amount, decimal price)
@@ -94,7 +99,7 @@ public class WarehouseRepository : IWarehouseRepository
         await using SqlCommand com = new SqlCommand();
 
         com.Connection = conn;
-        com.CommandText = "UPDATE cw7.Order SET FulfilledAt = @FulfilledAt WHERE IdOrder = @IdOrder";
+        com.CommandText = "UPDATE cw7.[Order] SET FulfilledAt = @FulfilledAt WHERE IdOrder = @IdOrder";
         com.Parameters.AddWithValue("@FulfilledAt", DateTime.Now);
         com.Parameters.AddWithValue("@IdOrder", idOrder);
 
